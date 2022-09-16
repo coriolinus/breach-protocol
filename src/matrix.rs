@@ -57,7 +57,9 @@ impl<'a, const WIDTH: usize, const HEIGHT: usize> Matrix<'a, WIDTH, HEIGHT> {
     }
 
     /// Select the point at the given coordinates if it is legal to do so.
-    pub fn select(&mut self, x: usize, y: usize) -> Result<(), Error> {
+    ///
+    /// Return the value at that point.
+    pub fn select(&mut self, x: usize, y: usize) -> Result<Interned<'_, String>, Error> {
         Self::check_bounds(x, y)?;
         if self.chosen[(x, y)] {
             return Err(Error::AlreadySelected { x, y });
@@ -68,7 +70,7 @@ impl<'a, const WIDTH: usize, const HEIGHT: usize> Matrix<'a, WIDTH, HEIGHT> {
 
         self.selections.push((x, y));
 
-        Ok(())
+        Ok(self.values[(x, y)])
     }
 
     /// Deselect the most recent point selected.
@@ -90,6 +92,17 @@ impl<'a, const WIDTH: usize, const HEIGHT: usize> Matrix<'a, WIDTH, HEIGHT> {
             .iter()
             .copied()
             .map(|(x, y)| self.values[(x, y)])
+    }
+
+    /// Iterate over legal next moves
+    pub fn legal_selections(&self) -> impl '_ + Iterator<Item = (usize, usize)> {
+        (0..)
+            .map(|t| match self.active {
+                Active::Row(y) => (t, y),
+                Active::Column(x) => (x, t),
+            })
+            .filter(|(x, y)| Self::check_bounds(*x, *y).is_ok())
+            .fuse()
     }
 }
 
