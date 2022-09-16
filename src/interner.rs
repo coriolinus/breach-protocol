@@ -117,6 +117,8 @@ pub struct Interned<'a, T> {
     idx: usize,
 }
 
+pub type InternedString<'a> = Interned<'a, String>;
+
 impl<'a, T> Deref for Interned<'a, T> {
     type Target = T;
 

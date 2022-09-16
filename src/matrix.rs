@@ -1,4 +1,7 @@
-use crate::{grid::Grid, interner::Interned};
+use crate::{
+    grid::Grid,
+    interner::{Interned, InternedString},
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Active {
@@ -36,7 +39,7 @@ impl Active {
 }
 
 pub struct Matrix<'a, const WIDTH: usize, const HEIGHT: usize> {
-    values: Grid<Interned<'a, String>, WIDTH, HEIGHT>,
+    values: Grid<InternedString<'a>, WIDTH, HEIGHT>,
     chosen: Grid<bool, WIDTH, HEIGHT>,
     selections: Vec<(usize, usize)>,
     active: Active,
