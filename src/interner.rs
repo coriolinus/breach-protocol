@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, ops::Deref};
+use std::{borrow::Borrow, fmt, ops::Deref};
 
 /// An interner keeps track of several possibly-non-`Copy` values, and can
 /// produce [`Interned`] versions of those values which implement `Copy`.
@@ -111,7 +111,7 @@ where
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Interned<'a, T> {
     interner: &'a Interner<T>,
     idx: usize,
@@ -125,13 +125,36 @@ impl<'a, T> Deref for Interned<'a, T> {
     }
 }
 
-// Interned values can be compared, but can't implement `Ord` because in the event
+// Interned values can be ordered, but can't implement `Ord` because in the event
 // that the interners don't match, there simply is no ordering between them.
 impl<'a, T> PartialOrd for Interned<'a, T>
 where
-    T: PartialOrd,
+    T: Ord,
 {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         (self.interner == other.interner).then(|| self.idx.cmp(&other.idx))
+    }
+}
+
+// Interned values always implement `Clone`, `Copy`, even if the internal types do not.
+// (That's the point.)
+impl<'a, T> Clone for Interned<'a, T> {
+    fn clone(&self) -> Self {
+        Self {
+            interner: self.interner,
+            idx: self.idx,
+        }
+    }
+}
+
+impl<'a, T> Copy for Interned<'a, T> {}
+
+// Interned values are `Display` whenever the underlying values are
+impl<'a, T> fmt::Display for Interned<'a, T>
+where
+    T: fmt::Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.deref().fmt(f)
     }
 }
