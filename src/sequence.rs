@@ -46,36 +46,39 @@ impl<'a> Sequence<'a> {
         // example: our desired sequence is 1A 2B 1A 3C
         // iterator items are 1A 2B 3C 1A 2B 1A 3C
         //
-        // item 0: 1A. Index 0 - sequence 0 means we check our sequence at position 0. Match, so we push `true`
-        // Item 1: 2B. First, do index 1 - sequence 1, so check sequence at position 0. No match, so push `false`.
-        //              Next, do checks for sequence in 0..(n-1):
-        //                  index 1 - sequence 0: match && true = true
-        // Item 2: 3C. First, do index 2 - sequence 2, so check sequence at position 0. No match, so push `false`.
-        //              Next, do checks for sequence in 0..(n-1):
-        //                  index 2 - sequence 0: no match (we want 1A again here); true && false = false
-        //                  index 2 - sequence 1: no match (we want 2B here); false && false = false
+        // item 0: 1A. Index 0 - offset 0 means we check our sequence at position 0. Match, so we push `true`
+        // Item 1: 2B. First, do index 1 - offset 1, so check sequence at position 0. No match, so push `false`.
+        //              Next, do checks for offset in 0..(n-1):
+        //                  index 1 - offset 0: match && true = true
+        // Item 2: 3C. First, do index 2 - offset 2, so check sequence at position 0. No match, so push `false`.
+        //              Next, do checks for offset in 0..(n-1):
+        //                  index 2 - offset 0: no match (we want 1A again here); true && false = false
+        //                  index 2 - offset 1: no match (we want 2B here); false && false = false
         // etc...
         let mut sequences = Vec::new();
         let mut item_count = 0;
-        for (index, item) in iter.into_iter().enumerate() {
+        'outer: for (index, item) in iter.into_iter().enumerate() {
             item_count += 1;
 
             sequences.push(self.items[0] == item);
 
             // now do the updates
-            // TODO: there is a panic here, the math is not right
-            for sequence in 0..(sequences.len() - 1) {
-                sequences[sequence] = sequences[sequence] && self.items[index - sequence] == item;
+            for offset in 0..(sequences.len() - 1) {
+                let check_idx = match index.checked_sub(offset) {
+                    Some(idx) => idx,
+                    None => continue 'outer,
+                };
+                if check_idx >= self.items.len() {
+                    continue 'outer;
+                }
+                sequences[offset] = sequences[offset] && self.items[check_idx] == item;
             }
         }
 
-        dbg!(&sequences);
-
-        // we're not quite done: what if there was a partial match, but they didn't provide enough input?
-        let desired_length = dbg!(dbg!(item_count) - dbg!(self.items.len()) + 1);
+        // we're not quite done: what if there was a partial match at the end,
+        // but they didn't provide enough input?
+        let desired_length = item_count - self.items.len() + 1;
         sequences.truncate(desired_length);
-
-        dbg!(&sequences);
 
         // if any subseqence was true at this point, we've succeeded
         sequences.into_iter().any(std::convert::identity)
@@ -91,6 +94,7 @@ enum Error {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
     fn make_interner() -> Interner<String> {
         let mut interner = Interner::new();
@@ -100,32 +104,16 @@ mod tests {
         interner
     }
 
-    #[test]
-    fn inner_example_bare() {
-        let interner = &make_interner();
-        let sequence = Sequence::new(&interner, "1A 2B 1A 3C".split_ascii_whitespace()).unwrap();
-        let items =
-            make_interned(&interner, "1A 2B 3C 1A 2B 1A 3C".split_ascii_whitespace()).unwrap();
-        assert!(sequence.is_matched(items));
-    }
-
-    #[test]
-    fn inner_example_incomplete() {
-        let interner = &make_interner();
-        let sequence = Sequence::new(&interner, "1A 2B 1A 3C".split_ascii_whitespace()).unwrap();
-        let items = make_interned(&interner, "1A 2B 3C 1A 2B 1A".split_ascii_whitespace()).unwrap();
-        assert!(!sequence.is_matched(items));
-    }
-
-    #[test]
-    fn inner_example_too_long() {
-        let interner = &make_interner();
-        let sequence = Sequence::new(&interner, "1A 2B 1A 3C".split_ascii_whitespace()).unwrap();
-        let items = make_interned(
-            &interner,
-            "1A 2B 3C 1A 2B 1A 3C 2B 3C 1A".split_ascii_whitespace(),
-        )
-        .unwrap();
-        assert!(sequence.is_matched(items));
+    #[rstest]
+    #[case::bare("1A 2B 1A 3C", "1A 2B 3C 1A 2B 1A 3C", true)]
+    #[case::incomplete("1A 2B 1A 3C", "1A 2B 3C 1A 2B 1A", false)]
+    #[case::extra("1A 2B 1A 3C", "1A 2B 3C 1A 2B 1A 3C 2B 3C 1A", true)]
+    #[case::exact("1A 2B", "1A 2B", true)]
+    #[case::backwards("1A 2B 3C", "3C 2B 1A", false)]
+    fn inner_example(#[case] sequence: &str, #[case] items: &str, #[case] expect_match: bool) {
+        let interner = make_interner();
+        let sequence = Sequence::new(&interner, sequence.split_ascii_whitespace()).unwrap();
+        let items = make_interned(&interner, items.split_ascii_whitespace()).unwrap();
+        assert_eq!(sequence.is_matched(items), expect_match);
     }
 }
