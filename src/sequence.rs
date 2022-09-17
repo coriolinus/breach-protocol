@@ -2,14 +2,12 @@ use crate::interner::{InternedString, Interner};
 
 #[derive(Debug)]
 pub struct Sequence<'a> {
-    name: Option<String>,
+    pub name: Option<String>,
     items: Vec<InternedString<'a>>,
 }
 
 /// Convert an iterable of stringy things into a vector of interned strings.
-///
-/// This will prove useful for testing.
-fn make_interned<Items, Item>(
+pub(crate) fn make_interned<Items, Item>(
     interner: &Interner<String>,
     items: Items,
 ) -> Result<Vec<InternedString>, Error>
@@ -29,7 +27,7 @@ where
 }
 
 impl<'a> Sequence<'a> {
-    fn new<Items, Item>(interner: &'a Interner<String>, items: Items) -> Result<Self, Error>
+    pub fn new<Items, Item>(interner: &'a Interner<String>, items: Items) -> Result<Self, Error>
     where
         Items: IntoIterator<Item = Item>,
         Item: AsRef<str>,
@@ -86,7 +84,7 @@ impl<'a> Sequence<'a> {
 }
 
 #[derive(Debug, thiserror::Error)]
-enum Error {
+pub enum Error {
     #[error("item not found when constructing sequence: \"{0}\"")]
     NotFound(String),
 }

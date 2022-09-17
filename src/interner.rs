@@ -117,10 +117,28 @@ where
 /// the value itself implements those, because that's the point: you can get a
 /// lot of speed at the cost of a moderately cumbersome interface.
 ///
+/// ## Equality
+///
 /// Equality has a special meaning for interned values: two `Interned<T>`
 /// compare as equal only if their parent interner is the same, even if the
 /// values themselves are equal. To compare by value, dereference both before
 /// performing the equality comparison.
+///
+/// ```rust
+/// # use breach_protocol::Interner;
+///
+/// let mut interner = Interner::new();
+/// interner.insert('a');
+///
+/// let a = interner.get(&'a').unwrap();
+/// let a_prime = a.clone();
+///
+/// assert_eq!(a, a_prime);
+///
+/// let interner_2 = interner.clone();
+/// let a_double_prime = interner_2.get(&'a').unwrap();
+/// assert_ne!(a, a_double_prime);
+/// ```
 #[derive(Eq)]
 pub struct Interned<'a, T> {
     interner: &'a Interner<T>,
