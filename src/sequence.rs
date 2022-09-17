@@ -11,10 +11,10 @@ pub struct Sequence<'a> {
 /// Convert an iterable of stringy things into a vector of interned strings.
 ///
 /// This will prove useful for testing.
-fn make_interned<'a, Items, Item>(
-    interner: &'a Interner<String>,
+fn make_interned<Items, Item>(
+    interner: &Interner<String>,
     items: Items,
-) -> Result<Vec<InternedString<'a>>, Error>
+) -> Result<Vec<InternedString>, Error>
 where
     Items: IntoIterator<Item = Item>,
     Item: AsRef<str>,
@@ -22,7 +22,9 @@ where
     let mut interneds = Vec::new();
     for item in items.into_iter() {
         let item = item.as_ref();
-        let interned = interner.get(item).ok_or(Error::NotFound(item.to_owned()))?;
+        let interned = interner
+            .get(item)
+            .ok_or_else(|| Error::NotFound(item.to_owned()))?;
         interneds.push(interned);
     }
     Ok(interneds)
@@ -87,7 +89,7 @@ impl<'a> Sequence<'a> {
 
 #[derive(Debug, thiserror::Error)]
 enum Error {
-    #[error("item not found hwen constructing sequence: \"{0}\"")]
+    #[error("item not found when constructing sequence: \"{0}\"")]
     NotFound(String),
 }
 
