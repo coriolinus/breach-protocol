@@ -38,6 +38,7 @@ impl Active {
     }
 }
 
+/// The Matrix keeps track of the grid of cells and the selections which have been made.
 pub struct Matrix<'a, const WIDTH: usize, const HEIGHT: usize> {
     values: Grid<InternedString<'a>, WIDTH, HEIGHT>,
     chosen: Grid<bool, WIDTH, HEIGHT>,

@@ -26,6 +26,7 @@ where
     Ok(interneds)
 }
 
+/// A Sequence is an ordered collection of values which, if selected, gives rewards.
 impl<'a> Sequence<'a> {
     pub fn new<Items, Item>(interner: &'a Interner<String>, items: Items) -> Result<Self, Error>
     where
@@ -40,6 +41,7 @@ impl<'a> Sequence<'a> {
     pub fn is_matched(&self, iter: impl IntoIterator<Item = InternedString<'a>>) -> bool {
         // the basic strategy here is to construct a vector of booleans.
         // each bool in the vec is true if and only if this sequence matches at that offset.
+        // we can then update each bool efficiently as new items arrive.
         //
         // example: our desired sequence is 1A 2B 1A 3C
         // iterator items are 1A 2B 3C 1A 2B 1A 3C
