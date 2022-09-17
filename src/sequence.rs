@@ -1,6 +1,4 @@
-use std::ops::Deref;
-
-use crate::interner::{Interned, InternedString, Interner};
+use crate::interner::{InternedString, Interner};
 
 #[derive(Debug)]
 pub struct Sequence<'a> {

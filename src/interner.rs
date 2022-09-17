@@ -129,7 +129,7 @@ pub struct Interned<'a, T> {
 
 impl<'a, T> Interned<'a, T> {
     fn interner_equal(&self, other: &Self) -> bool {
-        std::ptr::eq(self as _, other as _)
+        std::ptr::eq(self.interner, other.interner)
     }
 }
 
