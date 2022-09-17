@@ -111,10 +111,26 @@ where
     }
 }
 
-#[derive(PartialEq, Eq)]
+/// An interned value.
+///
+/// Interned values always implement `Clone` and `Copy`, regardless of whether
+/// the value itself implements those, because that's the point: you can get a
+/// lot of speed at the cost of a moderately cumbersome interface.
+///
+/// Equality has a special meaning for interned values: two `Interned<T>`
+/// compare as equal only if their parent interner is the same, even if the
+/// values themselves are equal. To compare by value, dereference both before
+/// performing the equality comparison.
+#[derive(Eq)]
 pub struct Interned<'a, T> {
     interner: &'a Interner<T>,
     idx: usize,
+}
+
+impl<'a, T> Interned<'a, T> {
+    fn interner_equal(&self, other: &Self) -> bool {
+        std::ptr::eq(self as _, other as _)
+    }
 }
 
 pub type InternedString<'a> = Interned<'a, String>;
@@ -133,6 +149,12 @@ impl<'a, T> Deref for Interned<'a, T> {
     }
 }
 
+impl<'a, T> PartialEq for Interned<'a, T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.interner_equal(other) && self.idx == other.idx
+    }
+}
+
 // Interned values can be ordered, but can't implement `Ord` because in the event
 // that the interners don't match, there simply is no ordering between them.
 impl<'a, T> PartialOrd for Interned<'a, T>
@@ -140,7 +162,7 @@ where
     T: Ord,
 {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        (self.interner == other.interner).then(|| self.idx.cmp(&other.idx))
+        self.interner_equal(other).then(|| self.idx.cmp(&other.idx))
     }
 }
 
