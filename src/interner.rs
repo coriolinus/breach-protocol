@@ -41,7 +41,7 @@ where
     pub fn get<Q>(&self, value: &Q) -> Option<Interned<T>>
     where
         T: Borrow<Q>,
-        Q: Ord,
+        Q: Ord + ?Sized,
     {
         self.0
             .binary_search_by_key(&value.borrow(), Borrow::borrow)
@@ -111,13 +111,19 @@ where
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub struct Interned<'a, T> {
     interner: &'a Interner<T>,
     idx: usize,
 }
 
 pub type InternedString<'a> = Interned<'a, String>;
+
+impl<'a, T> fmt::Debug for Interned<'a, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Interned").field("idx", &self.idx).finish()
+    }
+}
 
 impl<'a, T> Deref for Interned<'a, T> {
     type Target = T;
