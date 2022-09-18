@@ -49,22 +49,27 @@ pub struct BreachProtocol {
 }
 
 impl BreachProtocol {
-    pub fn solve<'a, const WIDTH: usize, const HEIGHT: usize>(
-        &'a self,
+    pub fn solve<'a, 'interner, const WIDTH: usize, const HEIGHT: usize>(
+        &'interner self,
         matrix: &'a mut Matrix<'a, WIDTH, HEIGHT>,
-        sequences: &'a [Sequence<'a>],
-    ) -> Vec<Solution<'a>> {
+        sequences: &[Sequence<'a>],
+    ) -> Vec<Solution<'a>>
+    where
+        'interner: 'a,
+    {
         let mut solutions = Vec::new();
         self.solve_inner(matrix, sequences, &mut solutions);
         solutions
     }
 
-    fn solve_inner<'a, const WIDTH: usize, const HEIGHT: usize>(
-        &'a self,
+    fn solve_inner<'a, 'interner, const WIDTH: usize, const HEIGHT: usize>(
+        &'interner self,
         matrix: &'a mut Matrix<'a, WIDTH, HEIGHT>,
-        sequences: &'a [Sequence<'a>],
-        solutions: &'a mut Vec<Solution<'a>>,
-    ) {
+        sequences: &[Sequence<'a>],
+        solutions: &mut Vec<Solution<'a>>,
+    ) where
+        'interner: 'a,
+    {
         let depth = matrix.selected_len();
         if depth < self.buffer_size {
             for (x, y) in matrix.legal_selections() {
