@@ -98,10 +98,22 @@ impl<'a, const WIDTH: usize, const HEIGHT: usize> Matrix<'a, WIDTH, HEIGHT> {
             .map(|(x, y)| self.values[(x, y)])
     }
 
+    /// How many items are selected
+    pub fn selected_len(&self) -> usize {
+        self.selections.len()
+    }
+
     /// Iterate over legal next moves
-    pub fn legal_selections(&self) -> impl '_ + Iterator<Item = (usize, usize)> {
+    ///
+    /// Note that the produced iterator does not have a lifetime reference `'_`.
+    /// State changes in the underlying active set can invalidate the validity of the iterator's items.
+    ///
+    /// This is intended to make recursive push/pop algorithms possible, but this function should be used
+    /// with caution.
+    pub fn legal_selections(&self) -> impl Iterator<Item = (usize, usize)> {
+        let active = self.active;
         (0..)
-            .map(|t| match self.active {
+            .map(move |t| match active {
                 Active::Row(y) => (t, y),
                 Active::Column(x) => (x, t),
             })
